@@ -11,6 +11,7 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
+    final isLightTheme = Theme.of(context).brightness == Brightness.light;
 
     return MyScaffoldLayout(
       children: [
@@ -36,7 +37,7 @@ class AdminDashboardScreen extends StatelessWidget {
           verticalPadding: 30.0,
           prefix: Icon(
             Icons.leaderboard,
-            color: Colors.white,
+            color: isLightTheme ? Colors.white : Theme.of(context).iconTheme.color,
             size: 22,
           ),
         ),
@@ -49,7 +50,7 @@ class AdminDashboardScreen extends StatelessWidget {
           verticalPadding: 30.0,
           prefix: Icon(
             Icons.manage_accounts,
-            color: Colors.white,
+            color: isLightTheme ? Colors.white : Theme.of(context).iconTheme.color,
             size: 22,
           ),
         ),
@@ -60,9 +61,11 @@ class AdminDashboardScreen extends StatelessWidget {
           text: 'Exit Account',
           onPressed: () async => logout(context),
           verticalPadding: 30.0,
+          color: isLightTheme ? Colors.redAccent : null,
+          textColor: !isLightTheme ? Colors.redAccent : null,
           prefix: Icon(
             Icons.logout,
-            color: Colors.white,
+            color: !isLightTheme ? Colors.redAccent : Colors.white,
             size: 22,
           ),
         ),

@@ -25,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final isLightTheme = Theme.of(context).brightness == Brightness.light;
     _nameController.text = userProvider.user?.name ?? '';
     _emailController.text = (userProvider.user as Supervisor).email;
 
@@ -116,14 +117,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         MyElevatedButton(
           text: 'Logout',
           onPressed: () async => logout(context),
+          color: isLightTheme ? Colors.redAccent : null,
+          textColor: !isLightTheme ? Colors.redAccent : null,
         ),
       ],
     );
   }
 
   void _updateSupervisor(UserProvider userProvider, String name) async {
-    if (!_formKey.currentState!.validate() ||
-        _nameController.text == userProvider.user!.name) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_nameController.text == userProvider.user!.name) {
+      Fluttertoast.showToast(
+        msg: 'The name hasn\'t been modified.',
+      );
+
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
 
     showLoadingDialog(context);
 

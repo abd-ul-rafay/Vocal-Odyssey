@@ -8,6 +8,7 @@ import 'package:vocal_odyssey/widgets/user_card.dart';
 import 'package:vocal_odyssey/widgets/my_text_field.dart';
 import '../../providers/user_provider.dart';
 import '../../services/admin_service.dart';
+import '../../utils/functions.dart';
 
 class ManageUsersScreen extends StatefulWidget {
   ManageUsersScreen({super.key});
@@ -58,15 +59,27 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     }
   }
 
-  Future<void> _removeUser(String userId) async {
+  Future<bool> _removeUser(String userId) async {
+    final confirmed = await showConfirmationDialog(
+      context: context,
+      title: 'Delete User',
+      message: 'Are you sure you want to delete this user?',
+      confirmText: 'Delete',
+    );
+
+    if (confirmed != true) return false;
+
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     try {
       await AdminService.deleteUser(userId, userProvider.token!);
+      return true;
     } catch (e) {
       Fluttertoast.showToast(msg: "Failed to delete users.");
       print(e.toString());
     }
+
+    return false;
   }
 
   void _filterUsers() {
@@ -109,11 +122,14 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       name: user.name,
                       email: user.email,
                       onDeletePress: () async {
-                        await _removeUser(user.id);
-                        setState(() {
-                          users.remove(user);
-                          filteredUsers = users;
-                        });
+                        final isDeleted = await _removeUser(user.id);
+
+                        if (isDeleted) {
+                          setState(() {
+                            users.remove(user);
+                            filteredUsers = users;
+                          });
+                        }
                       },
                     );
                   }),

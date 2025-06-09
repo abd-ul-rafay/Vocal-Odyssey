@@ -245,7 +245,7 @@ class _LevelFormScreenState extends State<LevelFormScreen> {
                       description: _descriptionController.text,
                       idealTime: int.parse(_idealTimeController.text),
                       type: _selectedType!,
-                      content: _contentController.text.split('\n'),
+                      content: _contentController.text.split('|').map((e) => e.trim()).toList(),
                     );
 
                     isAddMode ? _addLevel(newLevel) : _editLevel(newLevel);

@@ -25,7 +25,7 @@ Future<bool?> showConfirmationDialog({
   required String message,
   String cancelText = 'Cancel',
   String confirmText = 'Confirm',
-  Color confirmTextColor = Colors.red,
+  Color confirmTextColor = Colors.redAccent,
 }) {
   FocusManager.instance.primaryFocus?.unfocus();
 

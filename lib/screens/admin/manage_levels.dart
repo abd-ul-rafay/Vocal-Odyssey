@@ -37,15 +37,27 @@ class _ManageLevelsScreenState extends State<ManageLevelsScreen> {
     }
   }
 
-  Future<void> _deleteLevel(String id) async {
+  Future<bool> _deleteLevel(String id) async {
+    final confirmed = await showConfirmationDialog(
+      context: context,
+      title: 'Delete Level',
+      message: 'Are you sure you want to delete this level?',
+      confirmText: 'Delete',
+    );
+
+    if (confirmed != true) return false;
+
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       await AdminService.deleteLevel(id, userProvider.token!);
+      return true;
     } catch (e) {
       Fluttertoast.showToast(
         msg: extractErrorMessage(e),
       );
     }
+
+    return false;
   }
 
   Future<void> _navigateToLevelForm([Level? level]) async {
@@ -91,10 +103,13 @@ class _ManageLevelsScreenState extends State<ManageLevelsScreen> {
                     levelDescription: level.description,
                     onPressed: () => _navigateToLevelForm(level),
                     onDeletePressed: () async {
-                      await _deleteLevel(level.id);
-                      setState(() {
-                        levels.remove(level);
-                      });
+                      final isDeleted = await _deleteLevel(level.id);
+
+                      if (isDeleted) {
+                        setState(() {
+                          levels.remove(level);
+                        });
+                      }
                     },
                   );
                 }).toList(),
