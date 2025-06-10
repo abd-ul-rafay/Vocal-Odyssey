@@ -86,7 +86,7 @@ class _ManageLevelsScreenState extends State<ManageLevelsScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return SizedBox(
                 height: 200,
-                child: Center(child: CircularProgressIndicator()),
+                child: buildLoadingIndicator("Loading levels"),
               );
             } else if (snapshot.hasError) {
               return SizedBox(

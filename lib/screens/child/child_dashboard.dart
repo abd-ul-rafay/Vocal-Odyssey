@@ -83,7 +83,8 @@ class _ChildDashboardScreenState extends State<ChildDashboardScreen> {
           final shouldExit = await showConfirmationDialog(
             context: context,
             title: 'Exit App',
-            message: 'Do you really want to exit the app? Use Settings to return to the home screen.',
+            message:
+                'Do you really want to exit the app? Use Settings to return to the home screen.',
             cancelText: 'No',
             confirmText: 'Exit',
           );
@@ -107,105 +108,102 @@ class _ChildDashboardScreenState extends State<ChildDashboardScreen> {
             ),
           ),
         ),
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                spacing: 20,
-                children: [
-                  AvatarProgress(
-                    progress: _isLoading
-                        ? 0
-                        : stats.percentageWithAttempts / 100,
-                    imagePath: child.imagePath,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Progress:  ${_isLoading ? '...' : '${stats.percentageWithAttempts}%'}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+        children: _isLoading
+            ? [
+                SizedBox(height: 200),
+                buildLoadingIndicator("Loading your details"),
+              ]
+            : [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      spacing: 20,
+                      children: [
+                        AvatarProgress(
+                          progress: stats.percentageWithAttempts / 100,
+                          imagePath: child.imagePath,
                         ),
-                      ),
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: Colors.amber, size: 20),
-                          SizedBox(width: 4),
-                          Text(
-                            "${_isLoading ? '.. / ..' : '${stats.totalAchievedStars} / ${stats.totalStars}'} ",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Progress: ${stats.percentageWithAttempts}%',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
+                            Row(
+                              children: [
+                                Icon(Icons.star, color: Colors.amber, size: 20),
+                                SizedBox(width: 4),
+                                Text(
+                                  "${stats.totalAchievedStars} / ${stats.totalStars}",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    GestureDetector(
+                      onVerticalDragEnd: (_) =>
+                          Navigator.pushNamed(context, '/child_settings'),
+                      onTap: () => Fluttertoast.showToast(
+                        msg:
+                            "Drag the button down to open settings — this helps prevent accidental taps by kids.",
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              GestureDetector(
-                onVerticalDragEnd: (_) =>
-                    Navigator.pushNamed(context, '/child_settings'),
-                onTap: () => Fluttertoast.showToast(
-                  msg:
-                      "Drag the button down to open settings — this helps prevent accidental taps by kids.",
+                      child: SvgPicture.asset(
+                        'assets/icons/manage.svg',
+                        colorFilter: ColorFilter.mode(
+                          Theme.of(context).iconTheme.color ?? Colors.grey,
+                          BlendMode.srcIn,
+                        ),
+                        width: 26,
+                      ),
+                    ),
+                  ],
                 ),
-                child: SvgPicture.asset(
-                  'assets/icons/manage.svg',
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).iconTheme.color ?? Colors.grey,
-                    BlendMode.srcIn,
-                  ),
-                  width: 26,
+                SizedBox(height: 10),
+                Divider(),
+                SizedBox(height: 10),
+                Text(
+                  'Ready to practice your pronunciation?',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10),
-          Divider(),
-          SizedBox(height: 10),
-          Text(
-            'Ready to practice your pronunciation?',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          SizedBox(height: 10),
-          if (_isLoading)
-            SizedBox(
-              height: 300,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else
-            Column(
-              children: List.generate(3, (i) {
-                final contentType = _getCardContentType(i);
-                final specificStats = getLevelStats(
-                  levels
-                      .where((level) => level.level.type == contentType)
-                      .toList(),
-                );
+                SizedBox(height: 10),
+                Column(
+                  children: List.generate(3, (i) {
+                    final contentType = _getCardContentType(i);
+                    final specificStats = getLevelStats(
+                      levels
+                          .where((level) => level.level.type == contentType)
+                          .toList(),
+                    );
 
-                return PracticeCard(
-                  text: _getCardText(i),
-                  description: _getCardDescription(i),
-                  starRatio:
-                      '${specificStats.totalAchievedStars} / ${specificStats.totalStars}',
-                  progress: specificStats.percentageWithAttempts / 100,
-                  icon: _getCardIcon(i),
-                  startColor: _getCardColor(i, true),
-                  endColor: _getCardColor(i, false),
-                  onPressed: () => Navigator.pushNamed(
-                    context,
-                    '/level_selection',
-                    arguments: contentType,
-                  ),
-                );
-              }),
-            ),
-        ],
+                    return PracticeCard(
+                      text: _getCardText(i),
+                      description: _getCardDescription(i),
+                      starRatio:
+                          '${specificStats.totalAchievedStars} / ${specificStats.totalStars}',
+                      progress: specificStats.percentageWithAttempts / 100,
+                      icon: _getCardIcon(i),
+                      startColor: _getCardColor(i, true),
+                      endColor: _getCardColor(i, false),
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        '/level_selection',
+                        arguments: contentType,
+                      ),
+                    );
+                  }),
+                ),
+              ],
       ),
     );
   }

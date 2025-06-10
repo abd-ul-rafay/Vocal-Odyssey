@@ -45,7 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>NSPhotoLibraryUsageDescription</key>
-    <string>We need access to your photo library to allow you to change your avatar image.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>We need your microphone to record speech</string>
 </dict>
 </plist>

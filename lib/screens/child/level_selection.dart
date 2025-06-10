@@ -52,6 +52,8 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
     final levelsWithProgress = levelProvider.getLevelsByType(contentType);
     final color = getColor(contentType);
 
+    requestMicrophonePermission();
+
     return MyScaffoldLayout(
       appBar: MyAppBar(
         title: _getTitle(contentType),

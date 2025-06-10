@@ -6,16 +6,55 @@ import 'package:provider/provider.dart';
 import '../models/supervisor.dart';
 import '../providers/user_provider.dart';
 import '../services/auth_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'enums.dart';
 
-void showLoadingDialog(BuildContext context) {
+void showLoadingDialog(BuildContext context, {String? text}) {
   FocusManager.instance.primaryFocus?.unfocus();
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => const Center(
-      child: CircularProgressIndicator(),
+    builder: (_) => Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            if (text != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
+      ),
     ),
+  );
+}
+
+Widget buildLoadingIndicator(String message) {
+  return Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Center(child: CircularProgressIndicator()),
+      SizedBox(height: 15),
+      Center(
+        child: Text(
+          message,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ),
+    ],
   );
 }
 
@@ -106,6 +145,13 @@ Future<void> logout(BuildContext context) async {
   }
 }
 
+Future<void> requestMicrophonePermission() async {
+  final status = await Permission.microphone.request();
+  if (!status.isGranted) {
+    throw Exception('Microphone permission denied');
+  }
+}
+
 String getContentTypeTitle(ContentType contentType) {
   switch (contentType) {
     case ContentType.phonics:
@@ -125,5 +171,17 @@ MaterialColor getColor(ContentType contentType) {
       return Colors.green;
     case ContentType.sentences:
       return Colors.orange;
+  }
+}
+
+double getFontSize(contentType) {
+  switch (contentType) {
+    case ContentType.phonics:
+      return 100;
+    case ContentType.words:
+      return 75;
+    case ContentType.sentences:
+    default:
+      return 50;
   }
 }

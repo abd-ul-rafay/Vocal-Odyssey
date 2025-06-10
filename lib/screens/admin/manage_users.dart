@@ -108,7 +108,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         _isLoading
             ? SizedBox(
                 height: 200,
-                child: Center(child: CircularProgressIndicator()),
+                child: buildLoadingIndicator("Loading users"),
               )
             : users.isEmpty
             ? SizedBox(

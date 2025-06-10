@@ -1,15 +1,23 @@
-import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:record/record.dart';
+import 'package:vocal_odyssey/providers/user_provider.dart';
 import 'package:vocal_odyssey/widgets/my_app_bar.dart';
 import 'package:vocal_odyssey/widgets/my_elevated_button.dart';
 import 'package:vocal_odyssey/widgets/my_scaffold_layout.dart';
 import '../../models/level.dart';
-import '../../utils/enums.dart';
+import '../../services/speech_service.dart';
 import '../../utils/functions.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import '../../utils/enums.dart' as myEnum;
 
 class PlaygroundScreen extends StatefulWidget {
   const PlaygroundScreen({super.key});
@@ -19,304 +27,352 @@ class PlaygroundScreen extends StatefulWidget {
 }
 
 class PlaygroundScreenState extends State<PlaygroundScreen> {
-  late Level _level;
-
-  final FlutterTts _flutterTts = FlutterTts();
-
-  int _currentIndex = 0;
-
-  late Timer _timer;
-  Duration _elapsedTime = Duration.zero;
-  String _formattedTime = "00:00";
-  final ValueNotifier<String> _timeNotifier = ValueNotifier<String>("00:00");
+  late Level level;
+  List<Uint8List?> audioFiles = [];
+  bool isLoading = true;
+  int currentIndex = 0;
+  final _recorder = AudioRecorder();
+  bool _isRecording = false;
+  bool _isInit = true;
 
   @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)!.settings.arguments as PlaygroundScreenArguments;
-      _level = args.level;
-
-      _setupTts();
-      _showStartDialog();
-    });
-  }
-
-  Future<void> _setupTts() async {
-    await _flutterTts.setVoice({"name": "en-gb-x-gba-local", "locale": "en-GB"});
-    await _flutterTts.setSpeechRate(0.4);
-    await _flutterTts.setPitch(1.3);
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.speak("Hi there");
-  }
-
-  void _startLevel() {
-    _startTimer();
-    _speakCurrentContent("Let's start with");
-  }
-
-  Future<void> _speakCurrentContent(String initials) async {
-    if (_currentIndex < _level.content.length) {
-      final text = initials + "\n" + _level.content[_currentIndex];
-      await _flutterTts.stop();
-      await _flutterTts.speak(text);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInit) {
+      final arguments =
+          ModalRoute.of(context)!.settings.arguments
+              as PlaygroundScreenArguments;
+      level = arguments.level;
+      _fetchAllAudioFiles();
+      playAudio(AssetSource('/audios/greetings.wav'));
+      _isInit = false;
     }
-  }
-
-  void _moveToNextContent() {
-    if (_currentIndex < _level.content.length - 1) {
-      setState(() {
-        _currentIndex++;
-      });
-
-      _speakCurrentContent("Good job, now try speaking");
-    }
-  }
-
-  void _repeatContent() {
-    _speakCurrentContent("I'll repeat");
-  }
-
-  void _showStartDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        final color = Theme.of(context).iconTheme.color;
-
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Lottie.asset(
-                'assets/animations/robot.json',
-                width: 50,
-                height: 50,
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  "Hi there! 👋",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Are you ready to play this level and practice pronunciation? 😊",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18),
-              ),
-              SizedBox(height: 5),
-              Icon(Icons.campaign_rounded, size: 40, color: color),
-            ],
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _startLevel();
-              },
-              icon: Icon(Icons.play_arrow, color: Colors.white),
-              label: Text(
-                "Let’s Go!",
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        _elapsedTime += Duration(seconds: 1);
-        _formattedTime = _formatDuration(_elapsedTime);
-      });
-      _timeNotifier.value = _formattedTime;
-    });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
-    _timeNotifier.dispose();
+    _recorder.dispose();
     super.dispose();
   }
 
-  // Format the duration as mm:ss
-  String _formatDuration(Duration duration) {
-    String minutes =
-        duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    String seconds =
-        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$minutes:$seconds";
+  Future<void> _handleSpeakButton() async {
+    final hasPermission = await _recorder.hasPermission();
+    if (!hasPermission) {
+      Fluttertoast.showToast(msg: 'Microphone permission not granted');
+      requestMicrophonePermission();
+      return;
+    }
+
+    if (!_isRecording) {
+      // Start recording
+      final dir = await getTemporaryDirectory();
+      final path = '${dir.path}/recorded_audio.wav';
+
+      await _recorder.start(
+        const RecordConfig(encoder: AudioEncoder.wav),
+        path: path,
+      );
+
+      setState(() {
+        _isRecording = true;
+      });
+
+      print('Recording started: $path');
+    } else {
+      // Stop recording
+      final path = await _recorder.stop();
+
+      setState(() {
+        _isRecording = false;
+      });
+
+      if (path != null) {
+        print('Recording saved to: $path');
+        showLoadingDialog(context, text: 'Evaluating your speech');
+        final score = await _evaluateRecordedAudio(path);
+        Navigator.pop(context);
+
+        if (score == null) {
+          Fluttertoast.showToast(msg: "Something went wrong");
+          return;
+        }
+
+        if (score >= 85) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Good Job! 🎉',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(fontSize: 20),
+                    ),
+                    Text(
+                      'Your score is: $score',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    SizedBox(height: 10,),
+                    OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        moveToNext();
+                      },
+                      child: Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else if (score >= 60) {
+          Fluttertoast.showToast(msg: 'Try again! Score: $score');
+          await playAudio(AssetSource('/audios/retry-1.wav'));
+          repeatAudio();
+        } else {
+          Fluttertoast.showToast(msg: 'Try again! Score: $score');
+          await playAudio(AssetSource('/audios/retry-2.wav'));
+          repeatAudio();
+        }
+      } else {
+        Fluttertoast.showToast(msg: 'Failed to record your speech!');
+      }
+    }
   }
 
-  void _onSpeakNowPressed() {
+  Future<int?> _evaluateRecordedAudio(String path) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final referenceText = level.content[currentIndex];
+
+      final response = await SpeechService.evaluateSpeech(
+        token: userProvider.token!,
+        text: referenceText,
+        audioFile: File(path),
+      );
+
+      final Map<String, dynamic> json = jsonDecode(response.body);
+
+      if (json['status'] == 'success') {
+        final textScore = json['text_score'];
+        final speechaceScore = textScore['speechace_score']['pronunciation'];
+
+        print('SpeechAce Pronunciation: $speechaceScore');
+
+        return speechaceScore;
+      } else {
+        Fluttertoast.showToast(msg: 'Evaluation failed');
+      }
+    } catch (e) {
+      print('Error during evaluation: $e');
+      Fluttertoast.showToast(msg: 'Evaluation error');
+    }
+    return null;
+  }
+
+  Future<void> _fetchAllAudioFiles() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
     setState(() {
-      _moveToNextContent();
+      isLoading = true;
+      audioFiles = List<Uint8List?>.filled(level.content.length, null);
     });
+
+    try {
+      final futures = level.content.asMap().entries.map((entry) async {
+        final index = entry.key;
+
+        String label = level.type == myEnum.ContentType.phonics
+            ? "Letter"
+            : level.type == myEnum.ContentType.words
+            ? "Word"
+            : "Sentence";
+
+        final text = "The $label is: '${entry.value}'";
+
+        final response = await SpeechService.createSpeech(
+          token: userProvider.token!,
+          text: text,
+          voiceId: 'en-US-iris',
+        );
+
+        return (index, response.bodyBytes);
+      }).toList();
+
+      final results = await Future.wait(futures);
+
+      setState(() {
+        for (final result in results) {
+          audioFiles[result.$1] = result.$2;
+        }
+      });
+
+      print('All audio files loaded successfully');
+      if (audioFiles[0] != null) {
+        playAudio(BytesSource(audioFiles[currentIndex]!));
+      }
+    } catch (e) {
+      print('Failed to load audio: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> playAudio(Source source) async {
+    final audioPlayer = AudioPlayer();
+    await audioPlayer.play(source);
+    await audioPlayer.onPlayerComplete.first;
+  }
+
+  void repeatAudio() {
+    if (audioFiles[currentIndex] != null) {
+      playAudio(BytesSource(audioFiles[currentIndex]!));
+    }
+  }
+
+  void moveToNext() {
+    if (currentIndex < level.content.length - 1) {
+      setState(() {
+        currentIndex += 1;
+        if (audioFiles[currentIndex] != null) {
+          playAudio(BytesSource(audioFiles[currentIndex]!));
+        }
+      });
+    } else {
+      endLevel();
+    }
+  }
+
+  void endLevel() {
+    print('End');
+    Fluttertoast.showToast(msg: 'Level completed!');
   }
 
   @override
   Widget build(BuildContext context) {
     final arguments =
-    ModalRoute.of(context)!.settings.arguments as PlaygroundScreenArguments;
+        ModalRoute.of(context)!.settings.arguments as PlaygroundScreenArguments;
     final level = arguments.level;
-    final color = getColor(level.type);
 
     return MyScaffoldLayout(
-      appBar: MyAppBar(title: level.name, color: color),
-      topPadding: 10,
-      children: [
-        Text(
-          level.description,
-          style: TextStyle(
-            fontSize: 18.0,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        SizedBox(
-          height: 10.0,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                InkWell(
-                  onTap: () => setState(() {
-                    _repeatContent();
-                  }),
-                  child: Text(
-                    'Repeat?',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: color,
-                      fontWeight: FontWeight.bold,
+      appBar: MyAppBar(title: level.name),
+      topPadding: isLoading ? 250 : 10,
+      children: isLoading
+          ? [buildLoadingIndicator("Getting things ready for you")]
+          : [
+              Text(
+                level.description,
+                style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w500),
+              ),
+              SizedBox(height: 10.0),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/timer.svg',
+                        colorFilter: ColorFilter.mode(
+                          Theme.of(context).iconTheme.color ?? Colors.grey,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Time is ticking...',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Lottie.asset(
+                    'assets/animations/robot.json',
+                    width: 75,
+                    height: 75,
+                  ),
+                ],
+              ),
+              SizedBox(height: 20.0),
+              AspectRatio(
+                aspectRatio: 1.1,
+                child: Center(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 75.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(width: 1),
+                    ),
+                    child: Center(
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween<double>(
+                          begin: 0,
+                          end: getFontSize(level.type),
+                        ),
+                        duration: Duration(milliseconds: 500),
+                        builder: (context, size, child) {
+                          return Opacity(
+                            opacity: size / getFontSize(level.type),
+                            child: Text(
+                              level.content[currentIndex],
+                              style: TextStyle(
+                                fontSize: size,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.blue,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: 15,
-                ),
-                Row(
-                  spacing: 10,
-                  children: [
-                    SvgPicture.asset(
-                      'assets/icons/timer.svg',
-                      colorFilter: ColorFilter.mode(
-                        color,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    ValueListenableBuilder<String>(
-                      valueListenable: _timeNotifier,
-                      builder: (context, value, child) {
-                        return Text(
-                          'Time: $value',
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            Lottie.asset(
-              'assets/animations/robot.json',
-              width: 75,
-              height: 75,
-            ),
-          ],
-        ),
-        SizedBox(
-          height: 20.0,
-        ),
-        AspectRatio(
-          aspectRatio: 1.1,
-          child: Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 75.0),
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: color,
-                  width: 1,
-                ),
               ),
-              child: Center(
-                child: TweenAnimationBuilder<double>(
-                  tween:
-                      Tween<double>(begin: 0, end: _getFontSize(level.type)),
-                  duration: Duration(milliseconds: 500),
-                  builder: (context, size, child) {
-                    return Opacity(
-                      opacity: size / _getFontSize(level.type),
-                      // Ensures opacity goes from 0 to 1
-                      child: Text(
-                        level.content[_currentIndex],
-                        style: TextStyle(
-                          fontSize: size,
-                          fontWeight: FontWeight.w900,
-                          color: color,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    );
-                  },
-                ),
+              SizedBox(height: 5),
+              Center(
+                child: Text('${currentIndex + 1} / ${level.content.length}'),
               ),
-            ),
-          ),
-        ),
-        SizedBox(height: 5),
-        Center(
-          child: Text(
-            '${_currentIndex + 1} / ${level.content.length}',
-          ),
-        ),
-        SizedBox(height: 15),
-        MyElevatedButton(
-          text: 'Next',
-          color: color,
-          textColor: Colors.white,
-          prefix: SvgPicture.asset(
-            // 'assets/icons/${_isAISpeaking ? 'mic' : 'mic_off'}.svg',
-            'assets/icons/mic.svg',
-            colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-          ),
-          onPressed: _onSpeakNowPressed,
-        ),
-      ],
+              SizedBox(height: 15),
+              MyElevatedButton(
+                text: 'Repeat',
+                textColor: Colors.orange,
+                prefix: Icon(Icons.repeat, color: Colors.orange),
+                onPressed: repeatAudio,
+              ),
+              SizedBox(height: 10),
+              MyElevatedButton(
+                text: 'Speak',
+                textColor: Colors.green,
+                prefix: SvgPicture.asset(
+                  'assets/icons/${_isRecording ? 'mic_off' : 'mic'}.svg',
+                  colorFilter: ColorFilter.mode(Colors.green, BlendMode.srcIn),
+                ),
+                onPressed: _handleSpeakButton,
+              ),
+            ],
     );
-  }
-
-  double _getFontSize(contentType) {
-    switch (contentType) {
-      case ContentType.phonics:
-        return 100;
-      case ContentType.words:
-        return 75;
-      case ContentType.sentences:
-      default:
-        return 50;
-    }
   }
 }
 

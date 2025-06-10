@@ -47,17 +47,18 @@ class UserCard extends StatelessWidget {
               ),
               Text(
                 email,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               SizedBox(height: 10),
             ],
           ),
           IconButton(
             onPressed: onDeletePress,
-            icon: Icon(Icons.delete, size: 20,),
+            icon: Icon(
+              Icons.delete,
+              size: 20,
+              color: isLightMode ? Colors.red : Colors.redAccent,
+            ),
           ),
         ],
       ),

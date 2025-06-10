@@ -89,8 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return SizedBox(
-                height: 200,
-                child: Center(child: CircularProgressIndicator()),
+                height: 250,
+                child: buildLoadingIndicator("Loading child profiles"),
               );
             } else if (snapshot.hasError) {
               return SizedBox(

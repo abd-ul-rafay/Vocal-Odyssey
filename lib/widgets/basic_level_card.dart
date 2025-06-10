@@ -58,19 +58,11 @@ class BasicLevelCard extends StatelessWidget {
                   child: Text(
                     levelDescription,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                 ),
                 SizedBox(height: 5),
-                Text(
-                  levelType,
-                  style: TextStyle(
-                    fontSize: 12,
-                  ),
-                ),
+                Text(levelType, style: TextStyle(fontSize: 12)),
                 SizedBox(height: 10),
               ],
             ),
@@ -78,7 +70,11 @@ class BasicLevelCard extends StatelessWidget {
               visible: isAdmin,
               child: IconButton(
                 onPressed: onDeletePressed,
-                icon: Icon(Icons.delete, size: 20,),
+                icon: Icon(
+                  Icons.delete,
+                  size: 20,
+                  color: isLightMode ? Colors.red : Colors.redAccent,
+                ),
               ),
             ),
           ],
