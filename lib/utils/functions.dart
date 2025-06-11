@@ -58,6 +58,29 @@ Widget buildLoadingIndicator(String message) {
   );
 }
 
+void showErrorAndPop(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Error"),
+      content: const Padding(
+        padding: EdgeInsets.all(24.0),
+        child: Text("Something went wrong. Please try again."),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(); // Close the dialog
+          },
+          child: const Text("OK"),
+        ),
+      ],
+    ),
+  ).then((_) {
+    Navigator.of(context).pop(); // Pop the screen after dialog is dismissed
+  });
+}
+
 Future<bool?> showConfirmationDialog({
   required BuildContext context,
   required String title,

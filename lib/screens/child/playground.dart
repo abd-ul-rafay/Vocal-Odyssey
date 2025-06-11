@@ -11,10 +11,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 import 'package:vocal_odyssey/providers/user_provider.dart';
+import 'package:vocal_odyssey/services/attempt_service.dart';
 import 'package:vocal_odyssey/widgets/my_app_bar.dart';
 import 'package:vocal_odyssey/widgets/my_elevated_button.dart';
 import 'package:vocal_odyssey/widgets/my_scaffold_layout.dart';
 import '../../models/level.dart';
+import '../../providers/level_provider.dart';
 import '../../services/speech_service.dart';
 import '../../utils/functions.dart';
 import '../../utils/enums.dart' as myEnum;
@@ -31,6 +33,11 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
   List<Uint8List?> audioFiles = [];
   bool isLoading = true;
   int currentIndex = 0;
+  Map<String, int> _mistakesCount = {};
+  double _scoreSum = 0;
+  int _scoreCount = 0;
+
+  final audioPlayer = AudioPlayer();
   final _recorder = AudioRecorder();
   bool _isRecording = false;
   bool _isInit = true;
@@ -44,7 +51,7 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
               as PlaygroundScreenArguments;
       level = arguments.level;
       _fetchAllAudioFiles();
-      playAudio(AssetSource('/audios/greetings.wav'));
+      playAudio(AssetSource('audios/greetings.wav'));
       _isInit = false;
     }
   }
@@ -56,6 +63,7 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
   }
 
   Future<void> _handleSpeakButton() async {
+    audioPlayer.stop();
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       Fluttertoast.showToast(msg: 'Microphone permission not granted');
@@ -93,11 +101,31 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
         Navigator.pop(context);
 
         if (score == null) {
-          Fluttertoast.showToast(msg: "Something went wrong");
           return;
         }
 
+        if (score < 85) {
+          final contentItem = level.content[currentIndex];
+          _mistakesCount.update(
+            contentItem,
+            (value) => value + 1,
+            ifAbsent: () => 1,
+          );
+          print(_mistakesCount);
+        }
+
         if (score >= 85) {
+          _scoreSum += score;
+          _scoreCount += 1;
+
+          if (score >= 98) {
+            playAudio(AssetSource('audios/feedback-1.wav'));
+          } else if (score >= 90) {
+            playAudio(AssetSource('audios/feedback-2.wav'));
+          } else {
+            playAudio(AssetSource('audios/feedback-3.wav'));
+          }
+
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -110,18 +138,13 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Lottie.asset('assets/animations/congrats.json'),
                     Text(
-                      'Good Job! 🎉',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(fontSize: 20),
-                    ),
-                    Text(
-                      'Your score is: $score',
+                      'Your accuracy is: $score%',
                       style: TextStyle(fontSize: 18),
                     ),
-                    SizedBox(height: 10,),
-                    OutlinedButton(
+                    SizedBox(height: 10),
+                    TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                         moveToNext();
@@ -129,7 +152,7 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
                       child: Text(
                         'Continue',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -141,11 +164,11 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
           );
         } else if (score >= 60) {
           Fluttertoast.showToast(msg: 'Try again! Score: $score');
-          await playAudio(AssetSource('/audios/retry-1.wav'));
+          await playAudio(AssetSource('audios/retry-1.wav'));
           repeatAudio();
         } else {
           Fluttertoast.showToast(msg: 'Try again! Score: $score');
-          await playAudio(AssetSource('/audios/retry-2.wav'));
+          await playAudio(AssetSource('audios/retry-2.wav'));
           repeatAudio();
         }
       } else {
@@ -175,7 +198,7 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
 
         return speechaceScore;
       } else {
-        Fluttertoast.showToast(msg: 'Evaluation failed');
+        playAudio(AssetSource('audios/failed.wav'));
       }
     } catch (e) {
       print('Error during evaluation: $e');
@@ -226,7 +249,7 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
         playAudio(BytesSource(audioFiles[currentIndex]!));
       }
     } catch (e) {
-      print('Failed to load audio: $e');
+      showErrorAndPop(context);
     } finally {
       setState(() {
         isLoading = false;
@@ -235,7 +258,6 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
   }
 
   Future<void> playAudio(Source source) async {
-    final audioPlayer = AudioPlayer();
     await audioPlayer.play(source);
     await audioPlayer.onPlayerComplete.first;
   }
@@ -259,9 +281,53 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
     }
   }
 
-  void endLevel() {
-    print('End');
-    Fluttertoast.showToast(msg: 'Level completed!');
+  void endLevel() async {
+    double avgScore = 0;
+    if (_scoreCount > 0) {
+      avgScore = _scoreSum / _scoreCount;
+    }
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final levelProvider = Provider.of<LevelProvider>(context, listen: false);
+
+    final progressId = levelProvider.levelsWithProgress
+        .firstWhere((l) => l.level.id == level.id)
+        .progress
+        .id;
+
+    int totalMistakes = _mistakesCount.values.fold(0, (sum, count) => sum + count);
+    int stars;
+
+    if (avgScore >= 95 && totalMistakes == 0) {
+      stars = 3;
+    } else if (avgScore >= 90 && totalMistakes <= 2) {
+      stars = 2;
+    } else {
+      stars = 1;
+    }
+
+    try {
+      showLoadingDialog(context, text: 'Saving your attempt...');
+
+      final savedAttempt = await AttemptService.createAttempt(
+        token: userProvider.token!,
+        progressId: progressId,
+        score: avgScore.toInt(),
+        mistakesCounts: _mistakesCount,
+        stars: stars,
+      );
+
+      Navigator.of(context).pop();
+
+      levelProvider.addAttemptToLevel(progressId, savedAttempt);
+
+      Fluttertoast.showToast(msg: 'Level completed! Stars earned: ${savedAttempt.stars.toInt()}');
+
+
+    } catch (error) {
+      Navigator.of(context).pop();
+      Fluttertoast.showToast(msg: 'Failed to save attempt: ${error.toString()}');
+    }
   }
 
   @override
@@ -339,7 +405,6 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
                               style: TextStyle(
                                 fontSize: size,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.blue,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -357,17 +422,28 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
               SizedBox(height: 15),
               MyElevatedButton(
                 text: 'Repeat',
-                textColor: Colors.orange,
-                prefix: Icon(Icons.repeat, color: Colors.orange),
+                prefix: SvgPicture.asset(
+                  'assets/icons/repeat.svg',
+                  colorFilter: ColorFilter.mode(
+                    Theme.of(context).textTheme.bodyMedium?.color ??
+                        Colors.grey,
+                    BlendMode.srcIn,
+                  ),
+                  width: 22,
+                ),
                 onPressed: repeatAudio,
               ),
               SizedBox(height: 10),
               MyElevatedButton(
-                text: 'Speak',
-                textColor: Colors.green,
+                text: !_isRecording ? 'Speak' : 'Stop',
                 prefix: SvgPicture.asset(
                   'assets/icons/${_isRecording ? 'mic_off' : 'mic'}.svg',
-                  colorFilter: ColorFilter.mode(Colors.green, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(
+                    Theme.of(context).textTheme.bodyMedium?.color ??
+                        Colors.grey,
+                    BlendMode.srcIn,
+                  ),
+                  width: 22,
                 ),
                 onPressed: _handleSpeakButton,
               ),

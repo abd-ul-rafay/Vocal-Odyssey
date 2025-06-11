@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 class UserCard extends StatelessWidget {
   final String name;
@@ -54,10 +55,12 @@ class UserCard extends StatelessWidget {
           ),
           IconButton(
             onPressed: onDeletePress,
-            icon: Icon(
-              Icons.delete,
-              size: 20,
-              color: isLightMode ? Colors.red : Colors.redAccent,
+            icon: SvgPicture.asset(
+              'assets/icons/delete.svg',
+              colorFilter: ColorFilter.mode(
+                isLightMode ? Colors.red : Colors.redAccent,
+                BlendMode.srcIn,
+              ),
             ),
           ),
         ],

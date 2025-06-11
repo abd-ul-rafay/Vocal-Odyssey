@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import '../models/level_attempt.dart';
 import '../utils/enums.dart';
 import '../models/level_with_progress.dart';
 
 class LevelProvider with ChangeNotifier {
   List<LevelWithProgress> _levelsWithProgress = [];
-  int _selectedLevelIndex = -1;
 
   List<LevelWithProgress> get levelsWithProgress => _levelsWithProgress;
 
@@ -19,16 +19,11 @@ class LevelProvider with ChangeNotifier {
         .toList();
   }
 
-  void setSelectedLevel(int index) {
-    _selectedLevelIndex = index;
-    notifyListeners();
-  }
-
-  LevelWithProgress? getSelectedLevel() {
-    if (_selectedLevelIndex >= 0 &&
-        _selectedLevelIndex < _levelsWithProgress.length) {
-      return _levelsWithProgress[_selectedLevelIndex];
+  void addAttemptToLevel(String progressId, LevelAttempt newAttempt) {
+    final index = _levelsWithProgress.indexWhere((lwp) => lwp.progress.id == progressId);
+    if (index != -1) {
+      _levelsWithProgress[index].attempts.add(newAttempt);
+      notifyListeners();
     }
-    return null;
   }
 }

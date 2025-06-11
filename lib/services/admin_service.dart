@@ -64,7 +64,7 @@ class AdminService {
   static Future<Level> createLevel({
     required String name,
     required String description,
-    required int idealTime,
+    required int idealScore,
     required ContentType type,
     required List<String> content,
     required String token,
@@ -80,7 +80,7 @@ class AdminService {
       body: json.encode({
         'name': name,
         'description': description,
-        'ideal_time': idealTime,
+        'ideal_score': idealScore,
         'level_type': type.name,
         'content': content,
       }),
@@ -90,8 +90,6 @@ class AdminService {
       final jsonData = json.decode(response.body);
       return Level.fromMap(jsonData);
     } else {
-      print('-----------');
-      print(response.statusCode);
       throw Exception(parseError(response));
     }
   }
@@ -100,7 +98,7 @@ class AdminService {
     required String levelId,
     required String name,
     required String description,
-    required int idealTime,
+    required int idealScore,
     required ContentType type,
     required List<String> content,
     required String token,
@@ -116,7 +114,7 @@ class AdminService {
       body: json.encode({
         'name': name,
         'description': description,
-        'ideal_time': idealTime,
+        'ideal_score': idealScore,
         'level_type': type.name,
         'content': content,
       }),
@@ -126,8 +124,6 @@ class AdminService {
       final jsonData = json.decode(response.body);
       return Level.fromMap(jsonData);
     } else {
-      print('-----------');
-      print(response.statusCode);
       throw Exception(parseError(response));
     }
   }

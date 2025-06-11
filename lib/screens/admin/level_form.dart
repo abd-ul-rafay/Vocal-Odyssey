@@ -22,12 +22,12 @@ class LevelFormScreen extends StatefulWidget {
 class _LevelFormScreenState extends State<LevelFormScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _idealTimeController = TextEditingController();
+  final TextEditingController _idealScoreController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
 
   final FocusNode _nameFocusNode = FocusNode();
   final FocusNode _descriptionFocusNode = FocusNode();
-  final FocusNode _idealTimeFocusNode = FocusNode();
+  final FocusNode _idealScoreFocusNode = FocusNode();
   final FocusNode _contentFocusNode = FocusNode();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -46,7 +46,7 @@ class _LevelFormScreenState extends State<LevelFormScreen> {
       if (level != null) {
         _nameController.text = level.name;
         _descriptionController.text = level.description;
-        _idealTimeController.text = level.idealTime.toString();
+        _idealScoreController.text = level.idealScore.toString();
         _contentController.text = level.content.join(' | ');
         _selectedType = level.type;
       }
@@ -63,7 +63,7 @@ class _LevelFormScreenState extends State<LevelFormScreen> {
       await AdminService.createLevel(
         name: level.name,
         description: level.description,
-        idealTime: level.idealTime,
+        idealScore: level.idealScore,
         type: level.type,
         content: level.content,
         token: userProvider.token!,
@@ -93,7 +93,7 @@ class _LevelFormScreenState extends State<LevelFormScreen> {
         levelId: level.id,
         name: level.name,
         description: level.description,
-        idealTime: level.idealTime,
+        idealScore: level.idealScore,
         type: level.type,
         content: level.content,
         token: userProvider.token!,
@@ -157,7 +157,7 @@ class _LevelFormScreenState extends State<LevelFormScreen> {
                 textInputAction: TextInputAction.next,
                 focusNode: _descriptionFocusNode,
                 onEditingComplete: () =>
-                    FocusScope.of(context).requestFocus(_idealTimeFocusNode),
+                    FocusScope.of(context).requestFocus(_idealScoreFocusNode),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter the description';
@@ -167,18 +167,18 @@ class _LevelFormScreenState extends State<LevelFormScreen> {
               ),
               SizedBox(height: 12),
               MyTextField(
-                labelText: 'Ideal Time (in seconds)',
-                hintText: 'Enter ideal time',
-                controller: _idealTimeController,
+                labelText: 'Ideal score',
+                hintText: 'Enter ideal score',
+                controller: _idealScoreController,
                 icon: Icons.timer,
                 inputType: TextInputType.number,
                 textInputAction: TextInputAction.next,
-                focusNode: _idealTimeFocusNode,
+                focusNode: _idealScoreFocusNode,
                 onEditingComplete: () =>
                     FocusScope.of(context).requestFocus(_contentFocusNode),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter the ideal time';
+                    return 'Please enter the ideal score';
                   } else if (int.tryParse(value) == null ||
                       int.parse(value) <= 0) {
                     return 'Enter a valid positive number';
@@ -243,7 +243,7 @@ class _LevelFormScreenState extends State<LevelFormScreen> {
                           : _initialLevel!.id,
                       name: _nameController.text,
                       description: _descriptionController.text,
-                      idealTime: int.parse(_idealTimeController.text),
+                      idealScore: int.parse(_idealScoreController.text),
                       type: _selectedType!,
                       content: _contentController.text.split('|').map((e) => e.trim()).toList(),
                     );

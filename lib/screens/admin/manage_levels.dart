@@ -31,9 +31,7 @@ class _ManageLevelsScreenState extends State<ManageLevelsScreen> {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       _levelsFuture = AdminService.getLevels(userProvider.token!);
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: extractErrorMessage(e),
-      );
+      Fluttertoast.showToast(msg: extractErrorMessage(e));
     }
   }
 
@@ -52,9 +50,7 @@ class _ManageLevelsScreenState extends State<ManageLevelsScreen> {
       await AdminService.deleteLevel(id, userProvider.token!);
       return true;
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: extractErrorMessage(e),
-      );
+      Fluttertoast.showToast(msg: extractErrorMessage(e));
     }
 
     return false;
@@ -70,6 +66,8 @@ class _ManageLevelsScreenState extends State<ManageLevelsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
+
     return MyScaffoldLayout(
       appBar: MyAppBar(title: 'Manage Levels'),
       children: [
@@ -77,7 +75,13 @@ class _ManageLevelsScreenState extends State<ManageLevelsScreen> {
           text: 'Create New Level',
           onPressed: () => _navigateToLevelForm(),
           verticalPadding: 30.0,
-          prefix: Icon(Icons.add_chart_outlined, color: Colors.white, size: 22),
+          prefix: Icon(
+            Icons.add_chart_outlined,
+            color: isLightMode
+                ? Colors.white
+                : Theme.of(context).textTheme.bodyMedium?.color,
+            size: 22,
+          ),
         ),
         SizedBox(height: 10),
         FutureBuilder<List<Level>>(

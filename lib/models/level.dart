@@ -4,7 +4,7 @@ class Level {
   final String _id;
   final String name;
   final String description;
-  final int idealTime;
+  final int idealScore;
   final ContentType type;
   final List<String> content;
 
@@ -12,7 +12,7 @@ class Level {
       this._id, {
         required this.name,
         required this.description,
-        required this.idealTime,
+        required this.idealScore,
         required this.type,
         required this.content,
       });
@@ -24,7 +24,7 @@ class Level {
       map['_id'],
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      idealTime: map['ideal_time'] ?? 0,
+      idealScore: map['ideal_score'] ?? 0,
       type: ContentType.values.firstWhere(
             (e) => e.name == (map['level_type'] ?? '').toLowerCase(),
         orElse: () => ContentType.phonics,
@@ -38,7 +38,7 @@ class Level {
       '_id': _id,
       'name': name,
       'description': description,
-      'idealTime': idealTime,
+      'ideal_score': idealScore,
       'type': type.name,
       'content': content,
     };

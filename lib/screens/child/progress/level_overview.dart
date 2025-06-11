@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:vocal_odyssey/widgets/my_app_bar.dart';
 import 'package:vocal_odyssey/widgets/my_scaffold_layout.dart';
 import '../../../models/level.dart';
-import '../../../models/level_attempt.dart';
 import '../../../providers/level_provider.dart';
 
 class LevelOverviewScreen extends StatelessWidget {
@@ -18,7 +17,7 @@ class LevelOverviewScreen extends StatelessWidget {
 
     final attempts = lwp.firstWhere((l) => l.level.id == level.id).attempts;
     for (final a in attempts) {
-      print('${a.timeTaken} ${a.mistakesCount} ${a.timeTaken}');
+      print('${a.score} ${a.mistakesCount} ${a.score}');
     }
 
     return MyScaffoldLayout(
@@ -32,7 +31,7 @@ class LevelOverviewScreen extends StatelessWidget {
         const SizedBox(height: 10),
         Center(
           child: Text(
-            'Time Taken per Attempt',
+            'Avg Score per Attempt',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
         ),
@@ -49,7 +48,7 @@ class LevelOverviewScreen extends StatelessWidget {
                       x: entry.key,
                       barRods: [
                         BarChartRodData(
-                          toY: entry.value.timeTaken.toDouble(),
+                          toY: entry.value.score.toDouble(),
                           color: Colors.blue,
                           width: 18,
                           borderRadius: BorderRadius.circular(4),
@@ -181,7 +180,7 @@ class LevelOverviewScreen extends StatelessWidget {
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
-                'Time Taken: ${(attempt.timeTaken / 60).toStringAsFixed(2)} min\n'
+                'Time Taken: ${(attempt.score / 60).toStringAsFixed(2)} min\n'
                 'Mistakes: ${attempt.mistakesCount.isEmpty ? 'None' : attempt.mistakesCount.entries.map((e) => '${e.key}: ${e.value}').join(', ')}\n'
                 'Stars: ${attempt.stars}',
                 style: Theme.of(context).textTheme.bodyMedium,

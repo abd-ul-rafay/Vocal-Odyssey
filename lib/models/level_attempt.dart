@@ -1,13 +1,13 @@
 
 class LevelAttempt {
   final String _id;
-  final int timeTaken;
+  final int score;
   final Map<String, int> mistakesCount;
   final double stars;
 
   LevelAttempt(
       this._id, {
-        required this.timeTaken,
+        required this.score,
         required this.mistakesCount,
         required this.stars,
       });
@@ -21,7 +21,7 @@ class LevelAttempt {
   factory LevelAttempt.fromMap(Map<String, dynamic> map) {
     return LevelAttempt(
       map['_id'],
-      timeTaken: map['time_taken'] ?? 0,
+      score: map['score'] ?? 0,
       mistakesCount: Map<String, int>.from(map['mistakes_counts'] ?? {}),
       stars: (map['stars'] != null)
           ? (map['stars'] as num).toDouble()
@@ -32,7 +32,7 @@ class LevelAttempt {
   Map<String, dynamic> toMap() {
     return {
       '_id': _id,
-      'time_taken': timeTaken,
+      'score': score,
       'mistakes_counts': mistakesCount,
       'stars': stars,
     };

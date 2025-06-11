@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 class BasicLevelCard extends StatelessWidget {
   final String levelName;
@@ -70,10 +71,12 @@ class BasicLevelCard extends StatelessWidget {
               visible: isAdmin,
               child: IconButton(
                 onPressed: onDeletePressed,
-                icon: Icon(
-                  Icons.delete,
-                  size: 20,
-                  color: isLightMode ? Colors.red : Colors.redAccent,
+                icon: SvgPicture.asset(
+                  'assets/icons/delete.svg',
+                  colorFilter: ColorFilter.mode(
+                    isLightMode ? Colors.red : Colors.redAccent,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ),
             ),
