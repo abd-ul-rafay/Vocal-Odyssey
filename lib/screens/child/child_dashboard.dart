@@ -104,14 +104,22 @@ class _ChildDashboardScreenState extends State<ChildDashboardScreen> {
             angle: -pi / 2,
             child: Transform.scale(
               scaleX: -1,
-              child: Lottie.asset('assets/animations/cartoon.json', width: 90),
+              child: Lottie.asset(
+                'assets/animations/cartoon_1.json',
+                width: 90,
+              ),
             ),
           ),
         ),
         children: _isLoading
             ? [
                 SizedBox(height: 200),
-                buildLoadingIndicator("Loading your details"),
+                buildLoadingIndicator(
+                  widget: Lottie.asset(
+                    'assets/animations/cartoon_2.json',
+                    width: 150,
+                  ),
+                ),
               ]
             : [
                 Row(

@@ -14,9 +14,15 @@ class AttemptService {
   }) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/attempts/by-progress/$progressId');
 
+    // Mongodb don't accept dot as key in map
+    Map<String, int> cleanedMistakes = mistakesCounts.map((key, value) {
+      String cleanedKey = key.replaceAll('.', '');
+      return MapEntry(cleanedKey, value);
+    });
+
     final body = json.encode({
       'score': score,
-      'mistakes_counts': mistakesCounts,
+      'mistakes_counts': cleanedMistakes,
       'stars': stars,
     });
 

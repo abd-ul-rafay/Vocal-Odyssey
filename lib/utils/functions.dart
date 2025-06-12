@@ -9,7 +9,7 @@ import '../services/auth_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'enums.dart';
 
-void showLoadingDialog(BuildContext context, {String? text}) {
+void showLoadingDialog(BuildContext context, {Widget? widget, String? text}) {
   FocusManager.instance.primaryFocus?.unfocus();
   showDialog(
     context: context,
@@ -23,7 +23,7 @@ void showLoadingDialog(BuildContext context, {String? text}) {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
+            widget != null ? widget : CircularProgressIndicator(),
             if (text != null) ...[
               const SizedBox(height: 16),
               Text(
@@ -42,18 +42,19 @@ void showLoadingDialog(BuildContext context, {String? text}) {
   );
 }
 
-Widget buildLoadingIndicator(String message) {
+Widget buildLoadingIndicator({Widget? widget, String? text}) {
   return Column(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
-      Center(child: CircularProgressIndicator()),
+      Center(child: widget != null ? widget : CircularProgressIndicator()),
       SizedBox(height: 15),
-      Center(
-        child: Text(
-          message,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      if (text != null)
+        Center(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
         ),
-      ),
     ],
   );
 }

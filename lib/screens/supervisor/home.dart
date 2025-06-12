@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return SizedBox(
                 height: 250,
-                child: buildLoadingIndicator("Loading child profiles"),
+                child: buildLoadingIndicator(text: "Loading child profiles"),
               );
             } else if (snapshot.hasError) {
               return SizedBox(
