@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
@@ -47,11 +48,8 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
     super.didChangeDependencies();
     if (_isInit) {
       final arguments =
-      ModalRoute
-          .of(context)!
-          .settings
-          .arguments
-      as PlaygroundScreenArguments;
+          ModalRoute.of(context)!.settings.arguments
+              as PlaygroundScreenArguments;
       level = arguments.level;
       _fetchAllAudioFiles();
       playAudio(AssetSource('audios/greetings.wav'));
@@ -63,6 +61,43 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
   void dispose() {
     _recorder.dispose();
     super.dispose();
+  }
+
+  Future<void> showTryAgainDialogue(int score) async {
+    if (score >= 60) {
+      playAudio(AssetSource('audios/retry-1.wav'));
+    } else {
+      playAudio(AssetSource('audios/retry-2.wav'));
+    }
+
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset('assets/animations/sad.json', width: 90),
+              Text('Try Again!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,),),
+              SizedBox(height: 2),
+              Text('Accuracy: $score'),
+              SizedBox(height: 2),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Retry', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,),),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _handleSpeakButton() async {
@@ -87,8 +122,6 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
       setState(() {
         _isRecording = true;
       });
-
-      print('Recording started: $path');
     } else {
       // Stop recording
       final path = await _recorder.stop();
@@ -98,9 +131,11 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
       });
 
       if (path != null) {
-        print('Recording saved to: $path');
-        showLoadingDialog(context, text: 'Evaluating your speech',
-          widget: Lottie.asset('assets/animations/gradient.json', width: 120),);
+        showLoadingDialog(
+          context,
+          text: 'Evaluating your speech',
+          widget: Lottie.asset('assets/animations/bubbles.json', width: 120),
+        );
         final score = await _evaluateRecordedAudio(path);
         Navigator.pop(context);
 
@@ -112,10 +147,9 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
           final contentItem = level.content[currentIndex];
           _mistakesCount.update(
             contentItem,
-                (value) => value + 1,
+            (value) => value + 1,
             ifAbsent: () => 1,
           );
-          print(_mistakesCount);
         }
 
         if (score >= 85) {
@@ -133,47 +167,41 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (_) =>
-                Dialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Lottie.asset('assets/animations/congrats.json'),
-                        Text(
-                          'Your accuracy is: $score%',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                        SizedBox(height: 10),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            moveToNext();
-                          },
-                          child: Text(
-                            'Continue',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+            builder: (_) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Lottie.asset('assets/animations/congrats.json'),
+                    Text(
+                      'Your accuracy is: $score%',
+                      style: TextStyle(fontSize: 18),
                     ),
-                  ),
+                    SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        moveToNext();
+                      },
+                      child: Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ),
           );
-        } else if (score >= 60) {
-          Fluttertoast.showToast(msg: 'Try again! Score: $score');
-          await playAudio(AssetSource('audios/retry-1.wav'));
-          repeatAudio();
         } else {
-          Fluttertoast.showToast(msg: 'Try again! Score: $score');
-          await playAudio(AssetSource('audios/retry-2.wav'));
+          await showTryAgainDialogue(score);
           repeatAudio();
         }
       } else {
@@ -183,6 +211,8 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
   }
 
   Future<int?> _evaluateRecordedAudio(String path) async {
+    audioPlayer.stop();
+
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final referenceText = level.content[currentIndex];
@@ -199,14 +229,11 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
         final textScore = json['text_score'];
         final speechaceScore = textScore['speechace_score']['pronunciation'];
 
-        print('SpeechAce Pronunciation: $speechaceScore');
-
         return speechaceScore;
       } else {
         playAudio(AssetSource('audios/failed.wav'));
       }
     } catch (e) {
-      print('Error during evaluation: $e');
       Fluttertoast.showToast(msg: 'Evaluation error');
     }
     return null;
@@ -221,10 +248,7 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
     });
 
     try {
-      final futures = level.content
-          .asMap()
-          .entries
-          .map((entry) async {
+      final futures = level.content.asMap().entries.map((entry) async {
         final index = entry.key;
 
         String label = level.type == myEnum.ContentType.phonics
@@ -251,8 +275,6 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
           audioFiles[result.$1] = result.$2;
         }
       });
-
-      print('All audio files loaded successfully');
       if (audioFiles[0] != null) {
         playAudio(BytesSource(audioFiles[currentIndex]!));
       }
@@ -290,6 +312,8 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
   }
 
   void endLevel() async {
+    audioPlayer.stop();
+
     double avgScore = 0;
     if (_scoreCount > 0) {
       avgScore = _scoreSum / _scoreCount;
@@ -304,19 +328,25 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
         .id;
 
     int totalMistakes = _mistakesCount.values.fold(
-        0, (sum, count) => sum + count);
+      0,
+      (sum, count) => sum + count,
+    );
     int stars;
 
-    if (avgScore >= 95 && totalMistakes == 0) {
+    if (avgScore >= level.idealScore && totalMistakes == 0) {
       stars = 3;
-    } else if (avgScore >= 90 && totalMistakes <= 2) {
+    } else if (avgScore >= level.idealScore && totalMistakes <= 1) {
       stars = 2;
     } else {
       stars = 1;
     }
 
     try {
-      showLoadingDialog(context, text: 'Saving your attempt...', widget: Lottie.asset('assets/animations/bubbles.json', width: 90),);
+      showLoadingDialog(
+        context,
+        text: 'Saving your attempt...',
+        widget: Lottie.asset('assets/animations/fruits.json', width: 90),
+      );
 
       final savedAttempt = await AttemptService.createAttempt(
         token: userProvider.token!,
@@ -326,159 +356,221 @@ class PlaygroundScreenState extends State<PlaygroundScreen> {
         stars: stars,
       );
 
-      Navigator.of(context).pop();
-
+      Navigator.pop(context);
       levelProvider.addAttemptToLevel(progressId, savedAttempt);
 
-      Fluttertoast.showToast(
-          msg: 'Stars earned: ${savedAttempt.stars.toInt()}');
-      Navigator.pop(context);
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Level Complete!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,),),
+                SizedBox(height: 10),
+                Text('Your average score: ${avgScore.toInt()}%',),
+                Text('Stars achieved: $stars/3',),
+                SizedBox(height: 15),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(stars, (index) {
+                    return Lottie.asset(
+                      'assets/animations/star.json',
+                      width: 70,
+                      fit: BoxFit.contain,
+                    );
+                  }),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Continue', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,),),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     } catch (error) {
       Navigator.of(context).pop();
       Fluttertoast.showToast(
-          msg: 'Failed to save attempt: ${error.toString()}');
+        msg: 'Failed to save attempt: ${error.toString()}',
+      );
+    }
+  }
+
+  Future<void> onBackPressed() async {
+    final shouldExit = await showConfirmationDialog(
+      context: context,
+      title: 'Exit Level',
+      message:
+      'Your attempt will not be saved!',
+      cancelText: 'No',
+      confirmText: 'Exit',
+    );
+    if (shouldExit == true) {
+      audioPlayer.stop();
+      Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final arguments =
-    ModalRoute
-        .of(context)!
-        .settings
-        .arguments as PlaygroundScreenArguments;
-    final isLightTheme = Theme
-        .of(context)
-        .brightness == Brightness.light;
+        ModalRoute.of(context)!.settings.arguments as PlaygroundScreenArguments;
+    final isLightTheme = Theme.of(context).brightness == Brightness.light;
     final level = arguments.level;
 
-    return MyScaffoldLayout(
-      appBar: MyAppBar(title: level.name),
-      topPadding: isLoading ? 250 : 10,
-      children: isLoading
-          ? [
-        buildLoadingIndicator(widget: Lottie.asset('assets/animations/snail.json', width: 150),),
-      ]
-          : [
-        Text(
-          level.description,
-          style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w500),
-        ),
-        SizedBox(height: 10.0),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
+    return PopScope<Object?>(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, Object? result) async {
+          if (!didPop) {
+            await onBackPressed();
+          }
+        },
+        child: MyScaffoldLayout(
+          appBar: MyAppBar(title: level.name, onBack: onBackPressed,),
+          topPadding: isLoading ? 150 : 10,
+          children: isLoading
+              ? [
+            buildLoadingIndicator(
+              widget: Lottie.asset(
+                'assets/animations/shapes_loading.json',
+                width: 200,
+                fit: BoxFit.contain,
+
+              ),
+              text: "Getting things ready for you",
+            ),
+          ]
+              : [
+            Text(
+              level.description,
+              style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w500),
+            ),
+            SizedBox(height: 10.0),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SvgPicture.asset(
-                  'assets/icons/timer.svg',
-                  colorFilter: ColorFilter.mode(
-                    Theme
-                        .of(context)
-                        .iconTheme
-                        .color ?? Colors.grey,
-                    BlendMode.srcIn,
-                  ),
+                Row(
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icons/gen_ai.svg',
+                      colorFilter: ColorFilter.mode(
+                        Theme.of(context).iconTheme.color ?? Colors.grey,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Feel free to speak,',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'or repeat if you want.',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                SizedBox(width: 10),
-                Text(
-                  'Time is ticking...',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Lottie.asset(
+                  'assets/animations/robot.json',
+                  width: 75,
+                  height: 75,
                 ),
               ],
             ),
-            Lottie.asset(
-              'assets/animations/robot.json',
-              width: 75,
-              height: 75,
-            ),
-          ],
-        ),
-        SizedBox(height: 20.0),
-        AspectRatio(
-          aspectRatio: 1.1,
-          child: Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 10.0,
-                vertical: 75.0,
-              ),
-              decoration: BoxDecoration(
-                color: Theme
-                    .of(context)
-                    .scaffoldBackgroundColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(width: 1),
-              ),
+            SizedBox(height: 20.0),
+            AspectRatio(
+              aspectRatio: 1.1,
               child: Center(
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(
-                    begin: 0,
-                    end: getFontSize(level.type),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.0,
+                    vertical: 75.0,
                   ),
-                  duration: Duration(milliseconds: 500),
-                  builder: (context, size, child) {
-                    return Opacity(
-                      opacity: size / getFontSize(level.type),
-                      child: Text(
-                        level.content[currentIndex],
-                        style: TextStyle(
-                          fontSize: size,
-                          fontWeight: FontWeight.w900,
-                        ),
-                        textAlign: TextAlign.center,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(width: 1),
+                  ),
+                  child: Center(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(
+                        begin: 0,
+                        end: getFontSize(level.type),
                       ),
-                    );
-                  },
+                      duration: Duration(milliseconds: 500),
+                      builder: (context, size, child) {
+                        return Opacity(
+                          opacity: size / getFontSize(level.type),
+                          child: Text(
+                            level.content[currentIndex],
+                            style: TextStyle(
+                              fontSize: size,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        SizedBox(height: 5),
-        Center(
-          child: Text('${currentIndex + 1} / ${level.content.length}'),
-        ),
-        SizedBox(height: 15),
-        MyElevatedButton(
-          text: 'Repeat',
-          prefix: SvgPicture.asset(
-            'assets/icons/repeat.svg',
-            colorFilter: ColorFilter.mode(
-              isLightTheme ? Colors.white : Theme
-                  .of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.color ??
-                  Colors.grey,
-              BlendMode.srcIn,
+            SizedBox(height: 5),
+            Center(
+              child: Text('${currentIndex + 1} / ${level.content.length}'),
             ),
-            width: 22,
-          ),
-          onPressed: repeatAudio,
-        ),
-        SizedBox(height: 10),
-        MyElevatedButton(
-          text: !_isRecording ? 'Speak' : 'Stop',
-          prefix: SvgPicture.asset(
-            'assets/icons/${_isRecording ? 'mic_off' : 'mic'}.svg',
-            colorFilter: ColorFilter.mode(
-              isLightTheme ? Colors.white : Theme
-                  .of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.color ??
-                  Colors.grey,
-              BlendMode.srcIn,
+            SizedBox(height: 15),
+            MyElevatedButton(
+              text: 'Repeat',
+              prefix: SvgPicture.asset(
+                'assets/icons/repeat.svg',
+                colorFilter: ColorFilter.mode(
+                  isLightTheme
+                      ? Colors.white
+                      : Theme.of(context).textTheme.bodyMedium?.color ??
+                      Colors.grey,
+                  BlendMode.srcIn,
+                ),
+                width: 22,
+              ),
+              onPressed: repeatAudio,
             ),
-            width: 22,
-          ),
-          onPressed: _handleSpeakButton,
+            SizedBox(height: 10),
+            MyElevatedButton(
+              text: !_isRecording ? 'Speak' : 'Stop',
+              prefix: SvgPicture.asset(
+                'assets/icons/${_isRecording ? 'mic_off' : 'mic'}.svg',
+                colorFilter: ColorFilter.mode(
+                  isLightTheme
+                      ? Colors.white
+                      : Theme.of(context).textTheme.bodyMedium?.color ??
+                      Colors.grey,
+                  BlendMode.srcIn,
+                ),
+                width: 22,
+              ),
+              onPressed: _handleSpeakButton,
+            ),
+          ],
         ),
-      ],
     );
   }
 }

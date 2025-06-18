@@ -81,7 +81,7 @@ class LoginScreen extends StatelessWidget {
         SizedBox(height: 5),
         GestureDetector(
           onTap: () => Navigator.pushNamed(context, '/recover_password'),
-          child: Text('Forgot Password?'),
+          child: Text('Forgot Password?', style: TextStyle(decoration: TextDecoration.underline),),
         ),
         SizedBox(height: 15),
         MyElevatedButton(

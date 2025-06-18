@@ -76,7 +76,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       return true;
     } catch (e) {
       Fluttertoast.showToast(msg: "Failed to delete users.");
-      print(e.toString());
     }
 
     return false;

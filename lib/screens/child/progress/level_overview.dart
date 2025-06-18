@@ -16,9 +16,6 @@ class LevelOverviewScreen extends StatelessWidget {
     final lwp = levelProvider.levelsWithProgress;
 
     final attempts = lwp.firstWhere((l) => l.level.id == level.id).attempts;
-    for (final a in attempts) {
-      print('${a.score} ${a.mistakesCount} ${a.score}');
-    }
 
     return MyScaffoldLayout(
       appBar: MyAppBar(title: level.name),
@@ -31,7 +28,7 @@ class LevelOverviewScreen extends StatelessWidget {
         const SizedBox(height: 10),
         Center(
           child: Text(
-            'Avg Score per Attempt',
+            'Average Score per Attempt',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
         ),
@@ -40,6 +37,7 @@ class LevelOverviewScreen extends StatelessWidget {
           height: 200,
           child: BarChart(
             BarChartData(
+              minY: 80,
               barGroups: attempts
                   .asMap()
                   .entries
@@ -75,7 +73,7 @@ class LevelOverviewScreen extends StatelessWidget {
                     reservedSize: 40,
                     getTitlesWidget: (value, meta) {
                       return Text(
-                        '${(value.toInt() / 60).toStringAsFixed(2)} m',
+                        '${value.toInt()}%',
                         style: const TextStyle(fontSize: 10),
                       );
                     },
@@ -169,20 +167,23 @@ class LevelOverviewScreen extends StatelessWidget {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
-        ...attempts.reversed.map((attempt) {
+        ...attempts.asMap().entries.map((entry) {
+          final index = entry.key;
+          final attempt = entry.value;
+
           return Card(
             child: ListTile(
               title: Text(
-                'Attempt ${attempt.id}',
+                'Attempt ${index + 1}',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
-                'Time Taken: ${(attempt.score / 60).toStringAsFixed(2)} min\n'
+                'Score: ${attempt.score}%\n'
                 'Mistakes: ${attempt.mistakesCount.isEmpty ? 'None' : attempt.mistakesCount.entries.map((e) => '${e.key}: ${e.value}').join(', ')}\n'
-                'Stars: ${attempt.stars}',
+                'Stars achieved: ${attempt.stars.toInt()}',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),

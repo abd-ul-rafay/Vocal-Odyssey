@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:vocal_odyssey/utils/functions.dart';
 
 class BasicLevelCard extends StatelessWidget {
   final String levelName;
@@ -52,6 +53,7 @@ class BasicLevelCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: getColor(getContentTypeFromTitle(levelType)),
                   ),
                 ),
                 SizedBox(

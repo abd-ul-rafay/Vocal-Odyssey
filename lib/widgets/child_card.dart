@@ -66,7 +66,12 @@ class ChildCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 2),
-                      Text("$gender - Born $dob"),
+                      Text(
+                        "$gender - Born $dob",
+                        style: TextStyle(
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ],

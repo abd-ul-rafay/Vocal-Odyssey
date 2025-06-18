@@ -14,20 +14,9 @@ import 'package:vocal_odyssey/utils/enums.dart';
 import 'package:vocal_odyssey/widgets/avatar_progress.dart';
 import 'package:vocal_odyssey/widgets/my_scaffold_layout.dart';
 import 'package:vocal_odyssey/widgets/practice_card.dart';
+import '../../models/level_stats.dart';
 import '../../utils/functions.dart';
 import '../../widgets/welcome_app_bar.dart';
-
-class LevelStats {
-  final int totalAchievedStars;
-  final int totalStars;
-  final int percentageWithAttempts;
-
-  LevelStats({
-    required this.totalAchievedStars,
-    required this.totalStars,
-    required this.percentageWithAttempts,
-  });
-}
 
 class ChildDashboardScreen extends StatefulWidget {
   const ChildDashboardScreen({super.key});
@@ -62,7 +51,6 @@ class _ChildDashboardScreenState extends State<ChildDashboardScreen> {
       });
     } catch (e) {
       Fluttertoast.showToast(msg: "Failed to load levels.");
-      print(e.toString());
     }
   }
 
@@ -115,10 +103,15 @@ class _ChildDashboardScreenState extends State<ChildDashboardScreen> {
             ? [
                 SizedBox(height: 200),
                 buildLoadingIndicator(
-                  widget: Lottie.asset(
-                    'assets/animations/cartoon_2.json',
-                    width: 150,
+                  widget: Container(
+                     // color: Colors.red,
+                    child: Lottie.asset(
+                      'assets/animations/cartoon_2.json',
+                      width: 120,
+                      fit: BoxFit.cover,
+                    ),
                   ),
+                  text: "Loading your stats",
                 ),
               ]
             : [
@@ -161,7 +154,7 @@ class _ChildDashboardScreenState extends State<ChildDashboardScreen> {
                     ),
                     GestureDetector(
                       onVerticalDragEnd: (_) =>
-                          Navigator.pushNamed(context, '/child_settings'),
+                          Navigator.pushNamed(context, '/child_settings', arguments: stats),
                       onTap: () => Fluttertoast.showToast(
                         msg:
                             "Drag the button down to open settings — this helps prevent accidental taps by kids.",

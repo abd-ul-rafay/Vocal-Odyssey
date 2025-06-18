@@ -39,11 +39,7 @@ class AttemptService {
       final jsonData = json.decode(response.body);
       return LevelAttempt.fromMap(jsonData);
     } else {
-      print('Status Code: ${response.statusCode}');
-      print('Body: ${response.body}');
-      print('Headers: ${response.headers}');
-
-    throw Exception(parseError(response));
+      throw Exception(parseError(response));
     }
   }
 }

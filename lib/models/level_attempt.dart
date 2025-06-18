@@ -1,4 +1,3 @@
-
 class LevelAttempt {
   final String _id;
   final int score;

@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final MaterialColor? color;
+  final VoidCallback? onBack;
 
   const MyAppBar({
     super.key,
     required this.title,
     this.color,
+    this.onBack,
   });
 
   @override
@@ -26,7 +28,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
           Icons.arrow_back_ios_new_rounded,
           color: color,
         ),
-        onPressed: () => Navigator.pop(context),
+        onPressed: onBack ?? () => Navigator.pop(context),
       ),
     );
   }

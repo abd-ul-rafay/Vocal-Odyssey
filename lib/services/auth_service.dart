@@ -144,7 +144,6 @@ class AuthService {
         throw Exception(parseError(response));
       }
     } catch (e) {
-      print('------------ $e');
       rethrow;
     }
   }

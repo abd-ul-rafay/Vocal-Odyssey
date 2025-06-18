@@ -12,8 +12,11 @@ class ProgressReportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final levelProvider = Provider.of<LevelProvider>(context);
-    final lwp = levelProvider.levelsWithProgress;
-    final levels = [for (var l in lwp) if (l.attempts.isNotEmpty) l.level];
+    final lwp = levelProvider.levelsWithProgress;final levels = [
+      for (var l in lwp)
+        if (l.attempts.isNotEmpty) l.level
+    ]..sort((a, b) => contentTypeOrder(a.type).compareTo(contentTypeOrder(b.type)));
+
 
     return MyScaffoldLayout(
       appBar: MyAppBar(title: 'Progress Report'),

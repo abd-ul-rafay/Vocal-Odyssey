@@ -98,7 +98,8 @@ class _ManageLevelsScreenState extends State<ManageLevelsScreen> {
                 child: Center(child: Text('Couldn\'t load levels')),
               );
             } else if (snapshot.hasData) {
-              final levels = snapshot.data!;
+              final levels = snapshot.data!..sort((a, b) => contentTypeOrder(a.type).compareTo(contentTypeOrder(b.type)));
+
               return Column(
                 children: levels.map((level) {
                   return BasicLevelCard(

@@ -28,8 +28,6 @@ class SpeechService {
     if (response.statusCode == 200) {
       return response;
     } else {
-      print('Speech API failed with status: ${response.statusCode}');
-      print('Response body: ${response.body}');
       throw Exception(parseError(response));
     }
   }
@@ -58,8 +56,6 @@ class SpeechService {
     if (response.statusCode == 200) {
       return response;
     } else {
-      print('EvaluateSpeech API failed with status: ${response.statusCode}');
-      print('Response body: ${response.body}');
       throw Exception(parseError(response));
     }
   }

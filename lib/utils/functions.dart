@@ -42,17 +42,18 @@ void showLoadingDialog(BuildContext context, {Widget? widget, String? text}) {
   );
 }
 
-Widget buildLoadingIndicator({Widget? widget, String? text}) {
+Widget buildLoadingIndicator({Widget? widget, String? text,}) {
   return Column(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
       Center(child: widget != null ? widget : CircularProgressIndicator()),
-      SizedBox(height: 15),
+      if (widget == null)
+        SizedBox(height: 20),
       if (text != null)
         Center(
           child: Text(
             text,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500,),
           ),
         ),
     ],
@@ -187,6 +188,19 @@ String getContentTypeTitle(ContentType contentType) {
   }
 }
 
+ContentType getContentTypeFromTitle(String title) {
+  switch (title) {
+    case 'Phonics Practice':
+      return ContentType.phonics;
+    case 'Words Practice':
+      return ContentType.words;
+    case 'Sentences Practice':
+      return ContentType.sentences;
+    default:
+      throw ArgumentError('Unknown content type title: $title');
+  }
+}
+
 MaterialColor getColor(ContentType contentType) {
   switch (contentType) {
     case ContentType.phonics:
@@ -206,6 +220,17 @@ double getFontSize(contentType) {
       return 75;
     case ContentType.sentences:
     default:
-      return 50;
+      return 40;
   }
 }
+int contentTypeOrder(ContentType type) {
+  switch (type) {
+    case ContentType.phonics:
+      return 0;
+    case ContentType.words:
+      return 1;
+    case ContentType.sentences:
+      return 2;
+  }
+}
+
