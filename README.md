@@ -27,7 +27,7 @@ We built **Vocal Odyssey**, a mobile app that helps children improve their pronu
 - **Parents/teachers** can track progress with graphs and reports
 - **Admins** can manage users and levels across modules
 
-📄 [View SRS Document](SRS.pdf)
+📄 [View SRS Document](https://drive.google.com/file/d/1oqKwgFWz7cqF9f6R5y7izwC5YC9TMx85/view?usp=drive_link)
 
 ---
 
